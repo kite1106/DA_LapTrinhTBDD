@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../controllers/auth_controller.dart';
-import '../services/seed_data_service.dart';
 import '../services/wildlife_api_service.dart';
+import '../services/species_api_service.dart';
 import 'add_animal_screen.dart';
 import 'species_list_screen.dart';
 
@@ -14,8 +14,8 @@ class AdminHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authController = AuthController();
     final user = authController.currentUser;
-    final seedData = SeedData();
     final apiService = WildlifeApiService();
+    final speciesApi = SpeciesApiService();
 
     return Scaffold(
       appBar: AppBar(
@@ -105,20 +105,6 @@ class AdminHomeScreen extends StatelessWidget {
                       },
                     ),
                     _AdminActionCard(
-                      icon: Icons.dataset,
-                      title: 'Thêm dữ liệu mẫu',
-                      color: Colors.orange,
-                      onTap: () async {
-                        await seedData.addAllSampleData();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Đã thêm tất cả dữ liệu mẫu thành công!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      },
-                    ),
-                    _AdminActionCard(
                       icon: Icons.pets,
                       title: 'Thêm động vật',
                       color: Colors.green,
@@ -141,6 +127,25 @@ class AdminHomeScreen extends StatelessWidget {
                             backgroundColor: Colors.blue,
                           ),
                         );
+                      },
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.flutter_dash,
+                      title: 'Lấy loài Chim từ API',
+                      color: Colors.green,
+                      onTap: () async {
+                        final total = await speciesApi.importManyBirdSpecies(
+                          perPage: 40,
+                          maxPages: 5,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Đã lưu khoảng $total loài chim vào Firestore (species)'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
                       },
                     ),
                     _AdminActionCard(

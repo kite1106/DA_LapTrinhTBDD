@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../controllers/auth_controller.dart';
-import '../services/seed_data_service.dart';
 import '../services/wildlife_api_service.dart';
 import 'add_animal_screen.dart';
 import 'species_list_screen.dart';
@@ -16,155 +15,126 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authController = AuthController();
     final user = authController.currentUser;
-    final seedData = SeedData(); // Giữ lại nếu sau này cần cho user, hiện không dùng
     final apiService = WildlifeApiService(); // Giữ lại nếu sau này cần
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Trang chủ'),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFF00A86B),
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authController.signOut();
-            },
-          ),
-        ],
-      ),
-      body: Container
-      (
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.blue.shade50,
-              Colors.blue.shade100,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+      ),
+      drawer: Drawer(
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.blue.shade200,
-                      child: const Icon(Icons.person, color: Colors.white, size: 30),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Xin chào!',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            user?.email ?? 'User',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Email đã xác thực: ${user?.emailVerified ?? false ? "Có" : "Không"}',
-                            style: TextStyle(
-                              color: user?.emailVerified ?? false ? Colors.green : Colors.orange,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              UserAccountsDrawerHeader(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF00A86B),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  'Chức năng nhanh',
-                  style: Theme.of(context).textTheme.titleMedium,
+                currentAccountPicture: const CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, color: Color(0xFF00A86B)),
                 ),
-                const SizedBox(height: 12),
-                GridView(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 4 / 3,
-                  ),
-                  children: [
-                    _HomeActionCard(
-                      icon: Icons.list_alt,
-                      title: 'Danh mục loài',
-                      color: Colors.teal,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SpeciesListScreen(),
-                          ),
-                        );
-                      },
+                accountName: const Text('Người dùng'),
+                accountEmail: Text(user?.email ?? ''),
+              ),
+              ListTile(
+                leading: const Icon(Icons.list_alt),
+                title: const Text('Danh mục loài'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SpeciesListScreen(),
                     ),
-                    _HomeActionCard(
-                      icon: Icons.article,
-                      title: 'Tin tức bảo tồn',
-                      color: Colors.orange,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const NewsScreen(),
-                          ),
-                        );
-                      },
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.article),
+                title: const Text('Tin tức bảo tồn'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NewsScreen(),
                     ),
-                    _HomeActionCard(
-                      icon: Icons.favorite,
-                      title: 'Loài yêu thích',
-                      color: Colors.redAccent,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const FavoriteSpeciesScreen(),
-                          ),
-                        );
-                      },
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.favorite),
+                title: const Text('Loài yêu thích'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const FavoriteSpeciesScreen(),
                     ),
-                    _HomeActionCard(
-                      icon: Icons.person,
-                      title: 'Hồ sơ của tôi',
-                      color: Colors.blueGrey,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ProfileScreen(),
-                          ),
-                        );
-                      },
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text('Hồ sơ của tôi'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(),
                     ),
-                    _HomeActionCard(
-                      icon: Icons.logout,
-                      title: 'Đăng xuất',
-                      color: Colors.red,
-                      onTap: () async {
-                        await authController.signOut();
-                      },
+                  );
+                },
+              ),
+              const Spacer(),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.redAccent),
+                title: const Text('Đăng xuất'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await authController.signOut();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            
+              const SizedBox(height: 24),
+              Text(
+                'Ứng dụng nhận diện & tra cứu động vật quý hiếm',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Xem danh mục loài, tin tức bảo tồn, đánh dấu loài yêu thích và quản lý thông tin của bạn.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
+            ],
           ),
         ),
       ),
@@ -191,9 +161,16 @@ class _HomeActionCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          gradient: LinearGradient(
+            colors: [
+              color.withOpacity(0.15),
+              color.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -221,6 +198,127 @@ class _HomeActionCard extends StatelessWidget {
                     color: Colors.black87,
                   ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00A86B).withOpacity(0.06),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFF00A86B).withOpacity(0.2)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: const Color(0xFF00A86B)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF00A86B),
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeHighlightCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _HomeHighlightCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withOpacity(0.1),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.grey),
           ],
         ),
       ),

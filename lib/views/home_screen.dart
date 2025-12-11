@@ -4,6 +4,7 @@ import '../controllers/auth_controller.dart';
 import '../services/wildlife_api_service.dart';
 import 'add_animal_screen.dart';
 import 'species_list_screen.dart';
+import 'animal_list_screen.dart';
 import 'news_screen.dart';
 import 'favorite_species_screen.dart';
 import 'profile_screen.dart';
@@ -55,6 +56,19 @@ class HomeScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const SpeciesListScreen(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.view_list),
+                title: const Text('Danh sách động vật (chim)'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AnimalListScreen(),
                     ),
                   );
                 },
@@ -115,26 +129,189 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Container(
           color: Colors.white,
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            
-              const SizedBox(height: 24),
-              Text(
-                'Ứng dụng nhận diện & tra cứu động vật quý hiếm',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                if (user != null && user.email != null && user.email!.isNotEmpty)
+                  Text(
+                    'Xin chào, ${user.email}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                if (user != null && user.email != null && user.email!.isNotEmpty)
+                  const SizedBox(height: 8),
+                Text(
+                  'Ứng dụng nhận diện & tra cứu động vật quý hiếm',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Xem danh mục loài, tin tức bảo tồn, đánh dấu loài yêu thích và quản lý thông tin của bạn.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                ),
+                const SizedBox(height: 24),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _CategoryChip(
+                        icon: Icons.list_alt,
+                        label: 'Danh mục loài',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SpeciesListScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _CategoryChip(
+                        icon: Icons.pets,
+                        label: 'Động vật (chim)',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AnimalListScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _CategoryChip(
+                        icon: Icons.favorite,
+                        label: 'Loài yêu thích',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const FavoriteSpeciesScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _CategoryChip(
+                        icon: Icons.article,
+                        label: 'Tin tức bảo tồn',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NewsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                GridView.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  // Tăng chiều cao mỗi ô để tránh tràn nội dung văn bản
+                  childAspectRatio: 1.3,
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  children: [
+                    _HomeActionCard(
+                      icon: Icons.list_alt,
+                      title: 'Xem danh mục loài',
+                      color: const Color(0xFF00A86B),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SpeciesListScreen(),
+                          ),
+                        );
+                      },
                     ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Xem danh mục loài, tin tức bảo tồn, đánh dấu loài yêu thích và quản lý thông tin của bạn.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                    _HomeActionCard(
+                      icon: Icons.pets,
+                      title: 'Danh sách động vật (chim)',
+                      color: Colors.orange,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AnimalListScreen(),
+                          ),
+                        );
+                      },
                     ),
-              ),
-            ],
+                    _HomeActionCard(
+                      icon: Icons.article,
+                      title: 'Tin tức bảo tồn',
+                      color: Colors.blue,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NewsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _HomeActionCard(
+                      icon: Icons.favorite,
+                      title: 'Loài yêu thích của bạn',
+                      color: Colors.pinkAccent,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FavoriteSpeciesScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _HomeHighlightCard(
+                  title: 'Khám phá các loài chim quanh bạn',
+                  subtitle:
+                      'Xem danh sách các loài chim và thông tin chi tiết về mức độ nguy cấp.',
+                  icon: Icons.travel_explore,
+                  color: const Color(0xFF00A86B),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SpeciesListScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _HomeHighlightCard(
+                  title: 'Cập nhật tin tức bảo tồn',
+                  subtitle:
+                      'Đọc các bài viết mới nhất về bảo tồn thiên nhiên và đa dạng sinh học.',
+                  icon: Icons.public,
+                  color: Colors.blue,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NewsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),

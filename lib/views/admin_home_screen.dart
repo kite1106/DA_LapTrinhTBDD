@@ -6,6 +6,7 @@ import '../services/wildlife_api_service.dart';
 import '../services/species_api_service.dart';
 import 'add_animal_screen.dart';
 import 'species_list_screen.dart';
+import 'animal_list_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -105,6 +106,19 @@ class AdminHomeScreen extends StatelessWidget {
                       },
                     ),
                     _AdminActionCard(
+                      icon: Icons.view_list,
+                      title: 'Danh sách động vật (chim)',
+                      color: Colors.blue,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AnimalListScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _AdminActionCard(
                       icon: Icons.pets,
                       title: 'Thêm động vật',
                       color: Colors.green,
@@ -117,16 +131,21 @@ class AdminHomeScreen extends StatelessWidget {
                     ),
                     _AdminActionCard(
                       icon: Icons.cloud_download,
-                      title: 'Lấy dữ liệu từ API',
+                      title: 'Lấy động vật (Chim) từ API',
                       color: Colors.purple,
                       onTap: () async {
-                        await apiService.fetchAndSaveVietnamEndangeredAnimals();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Đã lấy và lưu 90+ động vật vào Firebase!'),
-                            backgroundColor: Colors.blue,
-                          ),
+                        final total = await apiService.fetchAndSaveBirdAnimals(
+                          perPage: 40,
+                          maxPages: 2,
                         );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Đã lưu khoảng $total cá thể chim vào Firebase (animals)'),
+                              backgroundColor: Colors.purple,
+                            ),
+                          );
+                        }
                       },
                     ),
                     _AdminActionCard(

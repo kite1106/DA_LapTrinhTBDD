@@ -74,6 +74,72 @@ class WildlifeApiService {
     }
   }
   
+  // Lấy danh sách quan sát các loài Chim (Aves)
+  Future<List<Map<String, dynamic>>> getBirdObservations({int perPage = 50, int page = 1}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/observations?iconic_taxa=Aves&per_page=$perPage&page=$page&order=desc&order_by=created_at'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final results = data['results'] as List;
+
+        return results.map((item) {
+          // Safe parse location (tương tự getAnimalsBySpecies)
+          GeoPoint location = const GeoPoint(10.8231, 106.6297);
+          if (item['location'] != null && item['location'] is Map) {
+            try {
+              final locationData = item['location'] as Map;
+              final lat = locationData['latitude'];
+              final lng = locationData['longitude'];
+
+              double latDouble = 10.8231;
+              double lngDouble = 106.6297;
+
+              if (lat != null) {
+                if (lat is num) {
+                  latDouble = lat.toDouble();
+                } else if (lat is String) {
+                  latDouble = double.tryParse(lat) ?? 10.8231;
+                }
+              }
+              if (lng != null) {
+                if (lng is num) {
+                  lngDouble = lng.toDouble();
+                } else if (lng is String) {
+                  lngDouble = double.tryParse(lng) ?? 106.6297;
+                }
+              }
+
+              location = GeoPoint(latDouble, lngDouble);
+            } catch (e) {
+              print('Error parsing bird location: $e');
+            }
+          }
+
+          return {
+            'name': item['taxon']?['name'] ?? 'Unknown',
+            'species': item['taxon']?['name'] ?? 'Unknown',
+            'description': item['description'] ?? 'No description available',
+            'imageUrl': item['photos']?.isNotEmpty == true
+                ? item['photos'][0]['url']?.replaceFirst('square', 'original')
+                : 'https://images.unsplash.com/photo-1470115636492-6d2b56f9146e',
+            'isRare': false,
+            'location': location,
+            'observedOn': item['observed_on'] ?? DateTime.now().toIso8601String(),
+            'observer': item['user']?['login'] ?? 'Unknown',
+          };
+        }).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('Error fetching bird observations: $e');
+      return [];
+    }
+  }
+  
   // Lấy 90+ động vật quý hiếm Việt Nam và lưu vào Firebase
   Future<void> fetchAndSaveVietnamEndangeredAnimals() async {
     final endangeredSpecies = [
@@ -125,6 +191,40 @@ class WildlifeApiService {
     } catch (e) {
       print('Lỗi khi lấy và lưu động vật: $e');
     }
+  }
+
+  // Lấy các quan sát Chim (Aves) và lưu vào collection 'animals'
+  Future<int> fetchAndSaveBirdAnimals({int perPage = 40, int maxPages = 2}) async {
+    int totalSaved = 0;
+
+    try {
+      for (int page = 1; page <= maxPages; page++) {
+        print('Đang lấy dữ liệu chim cho trang: $page');
+        final animals = await getBirdObservations(perPage: perPage, page: page);
+
+        if (animals.isEmpty) {
+          break;
+        }
+
+        for (final animal in animals) {
+          await _db.collection('animals').add({
+            ...animal,
+            'createdAt': FieldValue.serverTimestamp(),
+            'userId': FirebaseAuth.instance.currentUser?.uid,
+            'source': 'iNaturalist API - Birds',
+          });
+          totalSaved++;
+        }
+
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      print('Đã lấy và lưu $totalSaved cá thể chim vào Firebase (animals)!');
+    } catch (e) {
+      print('Lỗi khi lấy và lưu chim: $e');
+    }
+
+    return totalSaved;
   }
   
   bool _checkIfRare(String? speciesName) {

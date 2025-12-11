@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/species_model.dart';
-import '../services/firestore_service.dart';
+import '../controllers/species_controller.dart';
 import 'species_detail_screen.dart';
 
 class SpeciesListScreen extends StatefulWidget {
@@ -15,7 +15,7 @@ class SpeciesListScreen extends StatefulWidget {
 }
 
 class _SpeciesListScreenState extends State<SpeciesListScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
+  final SpeciesController _speciesController = SpeciesController();
   final TextEditingController _searchController = TextEditingController();
 
   String _selectedStatus = 'Tất cả';
@@ -61,7 +61,7 @@ class _SpeciesListScreenState extends State<SpeciesListScreen> {
     if (confirm != true) return;
 
     setState(() => _isLoading = true);
-    final success = await _firestoreService.deleteSpecies(species.id);
+    final success = await _speciesController.deleteSpecies(species);
     await _loadSpecies();
     setState(() => _isLoading = false);
 
@@ -179,7 +179,7 @@ class _SpeciesListScreenState extends State<SpeciesListScreen> {
     if (updated == null) return;
 
     setState(() => _isLoading = true);
-    final success = await _firestoreService.updateSpecies(updated);
+    final success = await _speciesController.updateSpecies(updated);
     await _loadSpecies();
     setState(() => _isLoading = false);
 
@@ -200,9 +200,9 @@ class _SpeciesListScreenState extends State<SpeciesListScreen> {
 
   Future<void> _loadSpecies() async {
     setState(() => _isLoading = true);
-    final speciesList = await _firestoreService.getAllSpecies();
+    await _speciesController.loadSpecies();
     setState(() {
-      _allSpecies = speciesList;
+      _allSpecies = _speciesController.species;
       _applyFilters();
       _isLoading = false;
     });
@@ -235,6 +235,138 @@ class _SpeciesListScreenState extends State<SpeciesListScreen> {
       default:
         return Colors.green;
     }
+  }
+
+  Future<void> _addSpecies() async {
+    final nameController = TextEditingController();
+    final scientificController = TextEditingController();
+    String statusValue = 'LC';
+    final categoryController = TextEditingController(text: 'Bird');
+
+    final formKey = GlobalKey<FormState>();
+
+    final created = await showDialog<Species>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Thêm loài mới'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tên thường gọi',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Vui lòng nhập tên thường gọi';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: scientificController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tên khoa học',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Vui lòng nhập tên khoa học';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: statusValue,
+                    decoration: const InputDecoration(
+                      labelText: 'Mức độ nguy cấp',
+                    ),
+                    items: _statusOptions
+                        .where((s) => s != 'Tất cả')
+                        .map(
+                          (s) => DropdownMenuItem<String>(
+                            value: s,
+                            child: Text(s),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        statusValue = value;
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: categoryController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nhóm loài',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Hủy'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+
+                final now = DateTime.now();
+                final newSpecies = Species(
+                  id: '',
+                  commonName: nameController.text.trim(),
+                  scientificName: scientificController.text.trim(),
+                  family: '',
+                  order: '',
+                  category: categoryController.text.trim(),
+                  conservationStatus: statusValue.trim(),
+                  description: '',
+                  distribution: '',
+                  population: '',
+                  threats: '',
+                  conservationActions: '',
+                  habitat: '',
+                  imageUrl: '',
+                  locations: const [],
+                  createdAt: now,
+                  updatedAt: now,
+                  isFavorite: false,
+                );
+                Navigator.of(context).pop(newSpecies);
+              },
+              child: const Text('Lưu'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (created == null) return;
+
+    setState(() => _isLoading = true);
+    final newId = await _speciesController.addSpecies(created);
+    await _loadSpecies();
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+    final success = newId.isNotEmpty;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? 'Đã thêm loài mới thành công' : 'Thêm loài mới thất bại'),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
   }
 
   @override
@@ -310,7 +442,8 @@ class _SpeciesListScreenState extends State<SpeciesListScreen> {
                               crossAxisCount: 2,
                               mainAxisSpacing: 12,
                               crossAxisSpacing: 12,
-                              childAspectRatio: 3 / 4,
+                              // Tăng chiều cao mỗi ô để tránh tràn nội dung
+                              childAspectRatio: 0.6,
                             ),
                             itemCount: _filteredSpecies.length,
                             itemBuilder: (context, index) {
@@ -345,6 +478,39 @@ class _SpeciesListScreenState extends State<SpeciesListScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: AspectRatio(
+                                          aspectRatio: 4 / 3,
+                                          child: species.imageUrl.isNotEmpty
+                                              ? Image.network(
+                                                  species.imageUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (context, error, stackTrace) {
+                                                    return Container(
+                                                      color: Colors.grey[200],
+                                                      child: const Center(
+                                                        child: Icon(
+                                                          Icons.image_not_supported,
+                                                          color: Colors.grey,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                )
+                                              : Container(
+                                                  color: Colors.grey[200],
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.image,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
                                       Row(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -379,12 +545,12 @@ class _SpeciesListScreenState extends State<SpeciesListScreen> {
                                                   _deleteSpecies(species);
                                                 }
                                               },
-                                              itemBuilder: (context) => [
-                                                const PopupMenuItem(
+                                              itemBuilder: (context) => const [
+                                                PopupMenuItem(
                                                   value: 'edit',
                                                   child: Text('Chỉnh sửa'),
                                                 ),
-                                                const PopupMenuItem(
+                                                PopupMenuItem(
                                                   value: 'delete',
                                                   child: Text('Xóa'),
                                                 ),
@@ -434,6 +600,12 @@ class _SpeciesListScreenState extends State<SpeciesListScreen> {
           ),
         ),
       ),
+      floatingActionButton: widget.isAdmin
+          ? FloatingActionButton(
+              onPressed: _addSpecies,
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }

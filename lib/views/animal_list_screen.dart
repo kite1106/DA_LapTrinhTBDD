@@ -15,6 +15,23 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
   final AnimalController _animalController = AnimalController();
   final int _pageSize = 15;
   int _currentPage = 0;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  String _rarityFilter = 'all'; // all | rare | common
+
+  void _keepSearchFocus() {
+    if (!_searchFocus.hasFocus && _searchFocus.canRequestFocus) {
+      _searchFocus.requestFocus();
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchFocus.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +56,20 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
           if (docs.isEmpty) {
             return const Center(child: Text('Chưa có động vật nào được lưu.'));
           }
-          final total = docs.length;
+          final filteredDocs = docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final name = (data['name'] ?? '') as String;
+            final species = (data['species'] ?? '') as String;
+            final isRare = data['isRare'] == true;
+            final q = _searchQuery.toLowerCase();
+            final matchesText = q.isEmpty || name.toLowerCase().contains(q) || species.toLowerCase().contains(q);
+            if (!matchesText) return false;
+            if (_rarityFilter == 'rare' && !isRare) return false;
+            if (_rarityFilter == 'common' && isRare) return false;
+            return true;
+          }).toList();
+
+          final total = filteredDocs.length;
           final totalPages = (total / _pageSize).ceil().clamp(1, 9999);
 
           if (_currentPage >= totalPages) {
@@ -48,13 +78,60 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
           if (_currentPage < 0) _currentPage = 0;
 
           final startIndex = _currentPage * _pageSize;
-          final endIndex = (startIndex + _pageSize) > total
-              ? total
-              : startIndex + _pageSize;
-          final pageDocs = docs.sublist(startIndex, endIndex);
+          final endIndex = (startIndex + _pageSize) > total ? total : startIndex + _pageSize;
+          final pageDocs = filteredDocs.sublist(startIndex, endIndex);
 
           return Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                child: TextField(
+                  controller: _searchController,
+                  textInputAction: TextInputAction.search,
+                  focusNode: _searchFocus,
+                  cursorColor: Colors.blue,
+                  style: const TextStyle(color: Colors.black87),
+                  decoration: const InputDecoration(
+                    labelText: 'Tìm kiếm theo tên hoặc loài',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                      _currentPage = 0;
+                    });
+                    _keepSearchFocus();
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _rarityFilter,
+                      decoration: const InputDecoration(
+                        labelText: 'Mức độ hiếm',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'all', child: Text('Tất cả')),
+                        DropdownMenuItem(value: 'rare', child: Text('Chỉ hiếm')),
+                        DropdownMenuItem(value: 'common', child: Text('Không hiếm')),
+                      ],
+                      onChanged: (v) {
+                        if (v == null) return;
+                        setState(() {
+                          _rarityFilter = v;
+                          _currentPage = 0;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.all(12),
@@ -84,6 +161,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => AnimalDetailScreen(
+                                animalId: doc.id,
                                 animalData: data,
                               ),
                             ),

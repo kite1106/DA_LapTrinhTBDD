@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../controllers/auth_controller.dart';
-import '../services/wildlife_api_service.dart';
-import '../services/species_api_service.dart';
 import 'add_animal_screen.dart';
-import 'species_list_screen.dart';
 import 'animal_list_screen.dart';
+import 'image_classifier_screen.dart';
+import '../services/wildlife_api_service.dart';
+import '../data/bird_repository.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -16,7 +17,7 @@ class AdminHomeScreen extends StatelessWidget {
     final authController = AuthController();
     final user = authController.currentUser;
     final apiService = WildlifeApiService();
-    final speciesApi = SpeciesApiService();
+    final firestore = FirebaseFirestore.instance;
 
     return Scaffold(
       appBar: AppBar(
@@ -93,28 +94,13 @@ class AdminHomeScreen extends StatelessWidget {
                   ),
                   children: [
                     _AdminActionCard(
-                      icon: Icons.list_alt,
-                      title: 'Danh mục loài',
-                      color: Colors.teal,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SpeciesListScreen(isAdmin: true),
-                          ),
-                        );
-                      },
-                    ),
-                    _AdminActionCard(
                       icon: Icons.view_list,
                       title: 'Danh sách động vật (chim)',
                       color: Colors.blue,
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const AnimalListScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const AnimalListScreen()),
                         );
                       },
                     ),
@@ -130,8 +116,31 @@ class AdminHomeScreen extends StatelessWidget {
                       },
                     ),
                     _AdminActionCard(
+                      icon: Icons.camera,
+                      title: 'Nhận diện ảnh',
+                      color: Colors.orange,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ImageClassifierScreen()),
+                        );
+                      },
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.analytics,
+                      title: 'Thống kê (placeholder)',
+                      color: Colors.indigo,
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Chức năng thống kê sẽ được bổ sung.'),
+                          ),
+                        );
+                      },
+                    ),
+                    _AdminActionCard(
                       icon: Icons.cloud_download,
-                      title: 'Lấy động vật (Chim) từ API',
+                      title: 'Lấy dữ liệu chim (API)',
                       color: Colors.purple,
                       onTap: () async {
                         final total = await apiService.fetchAndSaveBirdAnimals(
@@ -149,34 +158,35 @@ class AdminHomeScreen extends StatelessWidget {
                       },
                     ),
                     _AdminActionCard(
-                      icon: Icons.flutter_dash,
-                      title: 'Lấy loài Chim từ API',
+                      icon: Icons.cloud_upload,
+                      title: 'Đẩy 11 chim tĩnh',
                       color: Colors.green,
                       onTap: () async {
-                        final total = await speciesApi.importManyBirdSpecies(
-                          perPage: 40,
-                          maxPages: 5,
-                        );
+                        int saved = 0;
+                        for (final entry in birdRepository.entries) {
+                          final info = entry.value;
+                          await firestore.collection('animals').add({
+                            'name': info.commonName,
+                            'species': entry.key,
+                            'description': info.description,
+                            'imageUrl': info.imageUrl ?? '',
+                            'isRare': false,
+                            'location': GeoPoint(info.latitude, info.longitude),
+                            'observedOn': info.observedAt.toIso8601String(),
+                            'observer': info.observer,
+                            'source': 'Static bird_repository',
+                            'createdAt': FieldValue.serverTimestamp(),
+                          });
+                          saved++;
+                        }
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Đã lưu khoảng $total loài chim vào Firestore (species)'),
+                              content: Text('Đã đẩy $saved loài từ bird_repository vào animals'),
                               backgroundColor: Colors.green,
                             ),
                           );
                         }
-                      },
-                    ),
-                    _AdminActionCard(
-                      icon: Icons.analytics,
-                      title: 'Thống kê (placeholder)',
-                      color: Colors.indigo,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Chức năng thống kê sẽ được bổ sung.'),
-                          ),
-                        );
                       },
                     ),
                   ],

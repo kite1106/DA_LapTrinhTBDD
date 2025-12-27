@@ -3,11 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../controllers/auth_controller.dart';
 import '../services/wildlife_api_service.dart';
 import 'add_animal_screen.dart';
-import 'species_list_screen.dart';
 import 'animal_list_screen.dart';
 import 'news_screen.dart';
-import 'favorite_species_screen.dart';
 import 'profile_screen.dart';
+import 'image_classifier_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -48,19 +47,6 @@ class HomeScreen extends StatelessWidget {
                 accountEmail: Text(user?.email ?? ''),
               ),
               ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Danh mục loài'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SpeciesListScreen(),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
                 leading: const Icon(Icons.view_list),
                 title: const Text('Danh sách động vật (chim)'),
                 onTap: () {
@@ -87,14 +73,14 @@ class HomeScreen extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.favorite),
-                title: const Text('Loài yêu thích'),
+                leading: const Icon(Icons.camera),
+                title: const Text('Nhận diện ảnh'),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const FavoriteSpeciesScreen(),
+                      builder: (context) => const ImageClassifierScreen(),
                     ),
                   );
                 },
@@ -163,18 +149,6 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     children: [
                       _CategoryChip(
-                        icon: Icons.list_alt,
-                        label: 'Danh mục loài',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SpeciesListScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _CategoryChip(
                         icon: Icons.pets,
                         label: 'Động vật (chim)',
                         onTap: () {
@@ -182,18 +156,6 @@ class HomeScreen extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => const AnimalListScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _CategoryChip(
-                        icon: Icons.favorite,
-                        label: 'Loài yêu thích',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const FavoriteSpeciesScreen(),
                             ),
                           );
                         },
@@ -224,19 +186,6 @@ class HomeScreen extends StatelessWidget {
                   shrinkWrap: true,
                   children: [
                     _HomeActionCard(
-                      icon: Icons.list_alt,
-                      title: 'Xem danh mục loài',
-                      color: const Color(0xFF00A86B),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SpeciesListScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _HomeActionCard(
                       icon: Icons.pets,
                       title: 'Danh sách động vật (chim)',
                       color: Colors.orange,
@@ -262,38 +211,9 @@ class HomeScreen extends StatelessWidget {
                         );
                       },
                     ),
-                    _HomeActionCard(
-                      icon: Icons.favorite,
-                      title: 'Loài yêu thích của bạn',
-                      color: Colors.pinkAccent,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const FavoriteSpeciesScreen(),
-                          ),
-                        );
-                      },
-                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                _HomeHighlightCard(
-                  title: 'Khám phá các loài chim quanh bạn',
-                  subtitle:
-                      'Xem danh sách các loài chim và thông tin chi tiết về mức độ nguy cấp.',
-                  icon: Icons.travel_explore,
-                  color: const Color(0xFF00A86B),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SpeciesListScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
                 _HomeHighlightCard(
                   title: 'Cập nhật tin tức bảo tồn',
                   subtitle:

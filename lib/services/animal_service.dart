@@ -30,6 +30,32 @@ class AnimalService {
       rethrow;
     }
   }
+
+  Future<void> updateAnimal({
+    required String id,
+    required String name,
+    required String species,
+    required String description,
+    required String imageUrl,
+    required bool isRare,
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      await _db.collection('animals').doc(id).update({
+        'name': name,
+        'species': species,
+        'description': description,
+        'imageUrl': imageUrl,
+        'isRare': isRare,
+        'location': GeoPoint(latitude, longitude),
+      });
+      print('Đã cập nhật động vật: $name');
+    } catch (e) {
+      print('Lỗi cập nhật động vật: $e');
+      rethrow;
+    }
+  }
   
   Stream<QuerySnapshot> getAnimals() {
     return _db

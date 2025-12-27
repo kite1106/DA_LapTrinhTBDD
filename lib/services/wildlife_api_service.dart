@@ -7,11 +7,57 @@ class WildlifeApiService {
   static const String _baseUrl = 'https://api.inaturalist.org/v1';
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   
+  GeoPoint? _parseLocation(dynamic raw) {
+    try {
+      // Case 1: Map with latitude/longitude keys
+      if (raw is Map) {
+        final lat = raw['latitude'];
+        final lng = raw['longitude'];
+        double? latDouble;
+        double? lngDouble;
+        if (lat is num) latDouble = lat.toDouble();
+        if (lat is String) latDouble = double.tryParse(lat);
+        if (lng is num) lngDouble = lng.toDouble();
+        if (lng is String) lngDouble = double.tryParse(lng);
+        if (latDouble != null && lngDouble != null) {
+          return GeoPoint(latDouble, lngDouble);
+        }
+      }
+
+      // Case 2: String "lat,lon"
+      if (raw is String && raw.contains(',')) {
+        final parts = raw.split(',');
+        if (parts.length >= 2) {
+          final lat = double.tryParse(parts[0].trim());
+          final lng = double.tryParse(parts[1].trim());
+          if (lat != null && lng != null) return GeoPoint(lat, lng);
+        }
+      }
+
+      // Case 3: geojson.coordinates [lng, lat]
+      if (raw is Map && raw['coordinates'] is List) {
+        final coords = raw['coordinates'] as List;
+        if (coords.length >= 2) {
+          final lng = coords[0];
+          final lat = coords[1];
+          double? latDouble;
+          double? lngDouble;
+          if (lat is num) latDouble = lat.toDouble();
+          if (lng is num) lngDouble = lng.toDouble();
+          if (latDouble != null && lngDouble != null) return GeoPoint(latDouble, lngDouble);
+        }
+      }
+    } catch (e) {
+      print('Error parsing location: $e');
+    }
+    return null;
+  }
+
   // Lấy danh sách động vật theo loài
   Future<List<Map<String, dynamic>>> getAnimalsBySpecies(String species, {int perPage = 50}) async {
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/observations?taxon_name=$species&per_page=$perPage&order=desc&order_by=created_at'),
+        Uri.parse('$_baseUrl/observations?taxon_name=$species&per_page=$perPage&order=desc&order_by=created_at&geo=true'),
       );
       
       if (response.statusCode == 200) {
@@ -19,39 +65,8 @@ class WildlifeApiService {
         final results = data['results'] as List;
         
         return results.map((item) {
-          // Safe parse location
-          GeoPoint location = const GeoPoint(10.8231, 106.6297);
-          if (item['location'] != null && item['location'] is Map) {
-            try {
-              final locationData = item['location'] as Map;
-              final lat = locationData['latitude'];
-              final lng = locationData['longitude'];
-              
-              double latDouble = 10.8231;
-              double lngDouble = 106.6297;
-              
-              // Handle different types safely
-              if (lat != null) {
-                if (lat is num) {
-                  latDouble = lat.toDouble();
-                } else if (lat is String) {
-                  latDouble = double.tryParse(lat) ?? 10.8231;
-                }
-              }
-              if (lng != null) {
-                if (lng is num) {
-                  lngDouble = lng.toDouble();
-                } else if (lng is String) {
-                  lngDouble = double.tryParse(lng) ?? 106.6297;
-                }
-              }
-              
-              location = GeoPoint(latDouble, lngDouble);
-            } catch (e) {
-              print('Error parsing location: $e');
-              // Use default location
-            }
-          }
+          // Safe parse location; không gán default để tránh sai tọa độ
+          GeoPoint? location = _parseLocation(item['location']) ?? _parseLocation(item['geojson']);
           
           return {
             'name': item['taxon']['name'] ?? 'Unknown',
@@ -61,7 +76,7 @@ class WildlifeApiService {
                 ? item['photos'][0]['url']?.replaceFirst('square', 'original') 
                 : 'https://images.unsplash.com/photo-1564349683136-77e08dba1ef7',
             'isRare': _checkIfRare(item['taxon']['name']),
-            'location': location,
+            if (location != null) 'location': location,
             'observedOn': item['observed_on'] ?? DateTime.now().toIso8601String(),
             'observer': item['user']['login'] ?? 'Unknown',
           };
@@ -78,7 +93,7 @@ class WildlifeApiService {
   Future<List<Map<String, dynamic>>> getBirdObservations({int perPage = 50, int page = 1}) async {
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/observations?iconic_taxa=Aves&per_page=$perPage&page=$page&order=desc&order_by=created_at'),
+        Uri.parse('$_baseUrl/observations?iconic_taxa=Aves&per_page=$perPage&page=$page&order=desc&order_by=created_at&geo=true'),
       );
 
       if (response.statusCode == 200) {
@@ -86,37 +101,8 @@ class WildlifeApiService {
         final results = data['results'] as List;
 
         return results.map((item) {
-          // Safe parse location (tương tự getAnimalsBySpecies)
-          GeoPoint location = const GeoPoint(10.8231, 106.6297);
-          if (item['location'] != null && item['location'] is Map) {
-            try {
-              final locationData = item['location'] as Map;
-              final lat = locationData['latitude'];
-              final lng = locationData['longitude'];
-
-              double latDouble = 10.8231;
-              double lngDouble = 106.6297;
-
-              if (lat != null) {
-                if (lat is num) {
-                  latDouble = lat.toDouble();
-                } else if (lat is String) {
-                  latDouble = double.tryParse(lat) ?? 10.8231;
-                }
-              }
-              if (lng != null) {
-                if (lng is num) {
-                  lngDouble = lng.toDouble();
-                } else if (lng is String) {
-                  lngDouble = double.tryParse(lng) ?? 106.6297;
-                }
-              }
-
-              location = GeoPoint(latDouble, lngDouble);
-            } catch (e) {
-              print('Error parsing bird location: $e');
-            }
-          }
+          // Safe parse location (tương tự getAnimalsBySpecies); không default
+          GeoPoint? location = _parseLocation(item['location']) ?? _parseLocation(item['geojson']);
 
           return {
             'name': item['taxon']?['name'] ?? 'Unknown',
@@ -126,7 +112,7 @@ class WildlifeApiService {
                 ? item['photos'][0]['url']?.replaceFirst('square', 'original')
                 : 'https://images.unsplash.com/photo-1470115636492-6d2b56f9146e',
             'isRare': false,
-            'location': location,
+            if (location != null) 'location': location,
             'observedOn': item['observed_on'] ?? DateTime.now().toIso8601String(),
             'observer': item['user']?['login'] ?? 'Unknown',
           };

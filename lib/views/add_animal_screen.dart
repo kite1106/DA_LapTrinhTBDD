@@ -235,3 +235,6 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
     );
   }
 }
+
+
+

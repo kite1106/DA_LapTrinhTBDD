@@ -5,6 +5,7 @@ class News {
   final String title;
   final String content;
   final String summary;
+  final String link;
   final String author;
   final String category;
   final String imageUrl;
@@ -20,6 +21,7 @@ class News {
     required this.title,
     required this.content,
     required this.summary,
+    required this.link,
     required this.author,
     required this.category,
     required this.imageUrl,
@@ -37,6 +39,7 @@ class News {
       title: data['title'] ?? '',
       content: data['content'] ?? '',
       summary: data['summary'] ?? '',
+      link: data['link'] ?? '',
       author: data['author'] ?? '',
       category: data['category'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
@@ -54,6 +57,7 @@ class News {
       'title': title,
       'content': content,
       'summary': summary,
+      'link': link,
       'author': author,
       'category': category,
       'imageUrl': imageUrl,

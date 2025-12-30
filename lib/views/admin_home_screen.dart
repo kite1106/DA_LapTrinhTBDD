@@ -1,13 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import '../controllers/auth_controller.dart';
-import 'add_animal_screen.dart';
-import 'animal_list_screen.dart';
-import 'image_classifier_screen.dart';
-import '../services/wildlife_api_service.dart';
 import '../data/bird_repository.dart';
+import '../services/animal_service.dart';
+import '../services/news_rss_service.dart';
+import '../services/wildlife_api_service.dart';
+import '../views/add_animal_screen.dart';
+import '../views/animal_list_screen.dart';
+import '../views/image_classifier_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -15,8 +17,11 @@ class AdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authController = AuthController();
-    final user = authController.currentUser;
-    final apiService = WildlifeApiService();
+    final authService = AuthService();
+    final user = authService.currentUser;
+    final AnimalService animalService = AnimalService();
+    final WildlifeApiService apiService = WildlifeApiService();
+    final NewsRssService newsRssService = NewsRssService();
     final firestore = FirebaseFirestore.instance;
 
     return Scaffold(
@@ -154,6 +159,35 @@ class AdminHomeScreen extends StatelessWidget {
                               backgroundColor: Colors.purple,
                             ),
                           );
+                        }
+                      },
+                    ),
+                    _AdminActionCard(
+                      icon: Icons.rss_feed,
+                      title: 'Lấy tin Google News',
+                      color: Colors.orange,
+                      onTap: () async {
+                        try {
+                          final total = await newsRssService.fetchAndSave(
+                            query: 'bảo tồn động vật',
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Đã lưu $total bài tin vào news'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi lấy RSS: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                     ),

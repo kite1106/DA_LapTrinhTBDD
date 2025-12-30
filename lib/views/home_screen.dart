@@ -1,12 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 import '../controllers/auth_controller.dart';
 import '../services/wildlife_api_service.dart';
 import 'add_animal_screen.dart';
+import 'animal_detail_screen.dart';
 import 'animal_list_screen.dart';
+import 'image_classifier_screen.dart';
+import 'news_detail_screen.dart';
 import 'news_screen.dart';
 import 'profile_screen.dart';
-import 'image_classifier_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

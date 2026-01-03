@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+
 import 'firebase_options.dart';
 import 'views/login_screen.dart';
 import 'views/home_screen.dart';
 import 'views/admin_home_screen.dart';
 import 'services/firestore_service.dart';
 import 'models/user_model.dart';
+import 'providers/favorites_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,10 +22,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Firebase App',
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: const AuthWrapper(),
+    const primaryGreen = Color(0xFF00A86B);
+    return ChangeNotifierProvider<FavoritesProvider>(
+      create: (_) => FavoritesProvider(),
+      child: MaterialApp(
+        title: 'Flutter Firebase App',
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: primaryGreen,
+            primary: primaryGreen,
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: primaryGreen,
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+        ),
+        home: const AuthWrapper(),
+      ),
     );
   }
 }
@@ -32,6 +50,7 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final favorites = context.read<FavoritesProvider>();
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
@@ -40,6 +59,8 @@ class AuthWrapper extends StatelessWidget {
         }
         if (snapshot.hasData) {
           final user = snapshot.data!;
+          // đồng bộ user cho favorites (async, không chờ)
+          favorites.setUser(user.uid);
           final firestoreService = FirestoreService();
 
           return FutureBuilder<AppUser?>(
@@ -63,6 +84,7 @@ class AuthWrapper extends StatelessWidget {
             },
           );
         } else {
+          favorites.setUser(null);
           return LoginScreen();
         }
       },

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -21,6 +22,74 @@ class _ImageClassifierScreenState extends State<ImageClassifierScreen> {
   final ImageClassifierController _controller = ImageClassifierController();
 
   bool _modelReady = false;
+
+  Future<BirdInfo?> _loadBirdInfo(String label) async {
+    final fallback = birdRepository[label];
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('animals')
+          .where('species', isEqualTo: label)
+          .limit(1)
+          .get();
+
+      if (snap.docs.isEmpty) return fallback;
+
+      final data = snap.docs.first.data();
+
+      final String commonName = (data['name'] ?? data['commonName'] ?? label).toString();
+      final String scientificName = (data['scientificName'] ?? fallback?.scientificName ?? '').toString();
+
+      final rawDescription = (data['description'] ?? '').toString();
+      final description = (rawDescription.isEmpty || rawDescription == 'No description available')
+          ? (fallback?.description.isNotEmpty == true ? fallback!.description : 'Chưa có mô tả.')
+          : rawDescription;
+
+      final observer = (data['observer'] ?? fallback?.observer ?? 'Không rõ').toString();
+
+      DateTime observedAt = fallback?.observedAt ?? DateTime.now();
+      final dynamic observedRaw = data['observedAt'] ?? data['observedOn'] ?? data['createdAt'];
+      if (observedRaw is Timestamp) {
+        observedAt = observedRaw.toDate();
+      } else if (observedRaw is String) {
+        final parsed = DateTime.tryParse(observedRaw);
+        if (parsed != null) observedAt = parsed;
+      }
+
+      double? lat = fallback?.latitude;
+      double? lng = fallback?.longitude;
+      final dynamic loc = data['location'] ?? data['geoPoint'];
+      if (loc is GeoPoint) {
+        lat = loc.latitude;
+        lng = loc.longitude;
+      } else if (data['latitude'] != null && data['longitude'] != null) {
+        lat = (data['latitude'] as num).toDouble();
+        lng = (data['longitude'] as num).toDouble();
+      } else if (data['lat'] != null && data['lng'] != null) {
+        lat = (data['lat'] as num).toDouble();
+        lng = (data['lng'] as num).toDouble();
+      }
+
+      if (lat == null || lng == null) {
+        lat = fallback?.latitude ?? 0;
+        lng = fallback?.longitude ?? 0;
+      }
+
+      final imageUrl = (data['imageUrl'] ?? data['image'] ?? data['photoUrl'] ?? fallback?.imageUrl ?? '').toString();
+
+      return BirdInfo(
+        commonName: commonName,
+        scientificName: scientificName,
+        description: description,
+        observer: observer,
+        observedAt: observedAt,
+        latitude: lat,
+        longitude: lng,
+        imageUrl: imageUrl.isNotEmpty ? imageUrl : null,
+      );
+    } catch (_) {
+      return fallback;
+    }
+  }
 
   @override
   void initState() {
@@ -83,7 +152,7 @@ class _ImageClassifierScreenState extends State<ImageClassifierScreen> {
     final image = _controller.image;
     final detection = _controller.detection;
     final topDetection = (detection != null && detection.detections.isNotEmpty) ? detection.detections.first : null;
-    final BirdInfo? birdInfo = topDetection != null ? birdRepository[topDetection.label ?? ''] : null;
+    final label = topDetection?.label ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -193,49 +262,82 @@ class _ImageClassifierScreenState extends State<ImageClassifierScreen> {
               ),
             if (topDetection != null) ...[
               const SizedBox(height: 8),
-              _SpeciesDetailCard(
-                label: topDetection.label ?? 'Không rõ',
-                score: topDetection.score,
-                info: birdInfo,
-              ),
-              const SizedBox(height: 12),
-              if (birdInfo != null)
-                SizedBox(
-                  height: 220,
-                  child: FlutterMap(
-                    options: MapOptions(
-                      initialCenter: LatLng(birdInfo.latitude, birdInfo.longitude),
-                      initialZoom: 12,
-                      interactionOptions: const InteractionOptions(flags: ~InteractiveFlag.rotate),
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.example.flutter_firebase_app',
+              FutureBuilder<BirdInfo?>(
+                future: label.isEmpty ? Future.value(null) : _loadBirdInfo(label),
+                builder: (context, snap) {
+                  final info = snap.data;
+
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: LatLng(birdInfo.latitude, birdInfo.longitude),
-                            width: 40,
-                            height: 40,
-                            child: const Icon(Icons.location_on, color: Colors.red, size: 36),
+                      child: const Row(
+                        children: [
+                          SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
+                          SizedBox(width: 10),
+                          Text('Đang tải mô tả từ Firebase...'),
                         ],
                       ),
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      _SpeciesDetailCard(
+                        label: label.isNotEmpty ? label : 'Không rõ',
+                        score: topDetection.score,
+                        info: info,
+                      ),
+                      const SizedBox(height: 12),
+                      if (info != null && (info.latitude != 0 || info.longitude != 0))
+                        SizedBox(
+                          height: 220,
+                          child: FlutterMap(
+                            options: MapOptions(
+                              initialCenter: LatLng(info.latitude, info.longitude),
+                              initialZoom: 12,
+                              interactionOptions: const InteractionOptions(flags: ~InteractiveFlag.rotate),
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                userAgentPackageName: 'com.example.flutter_firebase_app',
+                              ),
+                              MarkerLayer(
+                                markers: [
+                                  Marker(
+                                    point: LatLng(info.latitude, info.longitude),
+                                    width: 40,
+                                    height: 40,
+                                    child: const Icon(Icons.location_on, color: Colors.red, size: 36),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: const Text('Chưa có tọa độ cho loài này.'),
+                        ),
                     ],
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: const Text('Chưa có tọa độ/mô tả cho loài này.'),
-                ),
+                  );
+                },
+              ),
             ],
           ],
         ),

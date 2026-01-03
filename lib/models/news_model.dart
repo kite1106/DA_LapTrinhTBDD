@@ -90,4 +90,38 @@ class News {
   String getFormattedDate() {
     return '${publishDate.day}/${publishDate.month}/${publishDate.year}';
   }
+
+  /// Clean HTML tags and common entities from RSS fields (content/summary/title).
+  String _stripHtml(String input) {
+    if (input.isEmpty) return '';
+    var text = input.replaceAll(RegExp(r'<[^>]*>'), ' ');
+    text = text.replaceAll(RegExp(r'&nbsp;?', caseSensitive: false), ' ');
+    text = text.replaceAll(RegExp(r'&amp;', caseSensitive: false), '&');
+    text = text.replaceAll(RegExp(r'&quot;', caseSensitive: false), '"');
+    text = text.replaceAll(RegExp(r'&#39;|&apos;', caseSensitive: false), "'");
+    text = text.replaceAll(RegExp(r'\\s+'), ' ');
+    return text.trim();
+  }
+
+  String get cleanTitle => _stripHtml(title);
+
+  String get cleanSummary {
+    if (summary.isNotEmpty) return _stripHtml(summary);
+    if (content.isNotEmpty) return _stripHtml(content);
+    return '';
+  }
+
+  String get cleanContent {
+    if (content.isNotEmpty) return _stripHtml(content);
+    if (summary.isNotEmpty) return _stripHtml(summary);
+    return '';
+  }
+
+  String get sourceDomain {
+    try {
+      final uri = Uri.parse(link);
+      if (uri.host.isNotEmpty) return uri.host.replaceFirst('www.', '');
+    } catch (_) {}
+    return '';
+  }
 }

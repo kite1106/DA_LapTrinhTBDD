@@ -9,7 +9,7 @@ class AddAnimalScreen extends StatefulWidget {
 }
 
 class _AddAnimalScreenState extends State<AddAnimalScreen> {
-
+  static const Color _primary = Color(0xFF00A86B);
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _speciesController = TextEditingController();
@@ -90,7 +90,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Thêm Động Vật'),
-        backgroundColor: Colors.blue,
+        backgroundColor: _primary,
         foregroundColor: Colors.white,
       ),
       body: Padding(
@@ -219,7 +219,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _addAnimal,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: _primary,
                       foregroundColor: Colors.white,
                     ),
                     child: _isLoading
@@ -235,3 +235,6 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
     );
   }
 }
+
+
+

@@ -5,6 +5,7 @@ class AppUser {
   final String email;
   final String displayName;
   final String? avatarUrl;
+  final DateTime? birthDate;
   final String? phone;
   final String? address;
   final List<String> favoriteSpecies; // Danh sách loài yêu thích
@@ -19,6 +20,7 @@ class AppUser {
     required this.email,
     required this.displayName,
     this.avatarUrl,
+    this.birthDate,
     this.phone,
     this.address,
     this.favoriteSpecies = const [],
@@ -35,6 +37,7 @@ class AppUser {
       email: data['email'] ?? '',
       displayName: data['displayName'] ?? '',
       avatarUrl: data['avatarUrl'],
+      birthDate: (data['birthDate'] as Timestamp?)?.toDate(),
       phone: data['phone'],
       address: data['address'],
       favoriteSpecies: List<String>.from(data['favoriteSpecies'] ?? []),
@@ -51,6 +54,7 @@ class AppUser {
       'email': email,
       'displayName': displayName,
       'avatarUrl': avatarUrl,
+      'birthDate': birthDate,
       'phone': phone,
       'address': address,
       'favoriteSpecies': favoriteSpecies,
@@ -65,6 +69,7 @@ class AppUser {
   AppUser copyWith({
     String? displayName,
     String? avatarUrl,
+    DateTime? birthDate,
     String? phone,
     String? address,
     List<String>? favoriteSpecies,
@@ -77,6 +82,7 @@ class AppUser {
       email: email,
       displayName: displayName ?? this.displayName,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      birthDate: birthDate ?? this.birthDate,
       phone: phone ?? this.phone,
       address: address ?? this.address,
       favoriteSpecies: favoriteSpecies ?? this.favoriteSpecies,

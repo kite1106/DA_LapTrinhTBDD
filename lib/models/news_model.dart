@@ -5,6 +5,7 @@ class News {
   final String title;
   final String content;
   final String summary;
+  final String link;
   final String author;
   final String category;
   final String imageUrl;
@@ -20,6 +21,7 @@ class News {
     required this.title,
     required this.content,
     required this.summary,
+    required this.link,
     required this.author,
     required this.category,
     required this.imageUrl,
@@ -37,6 +39,7 @@ class News {
       title: data['title'] ?? '',
       content: data['content'] ?? '',
       summary: data['summary'] ?? '',
+      link: data['link'] ?? '',
       author: data['author'] ?? '',
       category: data['category'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
@@ -54,6 +57,7 @@ class News {
       'title': title,
       'content': content,
       'summary': summary,
+      'link': link,
       'author': author,
       'category': category,
       'imageUrl': imageUrl,
@@ -85,5 +89,39 @@ class News {
 
   String getFormattedDate() {
     return '${publishDate.day}/${publishDate.month}/${publishDate.year}';
+  }
+
+  /// Clean HTML tags and common entities from RSS fields (content/summary/title).
+  String _stripHtml(String input) {
+    if (input.isEmpty) return '';
+    var text = input.replaceAll(RegExp(r'<[^>]*>'), ' ');
+    text = text.replaceAll(RegExp(r'&nbsp;?', caseSensitive: false), ' ');
+    text = text.replaceAll(RegExp(r'&amp;', caseSensitive: false), '&');
+    text = text.replaceAll(RegExp(r'&quot;', caseSensitive: false), '"');
+    text = text.replaceAll(RegExp(r'&#39;|&apos;', caseSensitive: false), "'");
+    text = text.replaceAll(RegExp(r'\\s+'), ' ');
+    return text.trim();
+  }
+
+  String get cleanTitle => _stripHtml(title);
+
+  String get cleanSummary {
+    if (summary.isNotEmpty) return _stripHtml(summary);
+    if (content.isNotEmpty) return _stripHtml(content);
+    return '';
+  }
+
+  String get cleanContent {
+    if (content.isNotEmpty) return _stripHtml(content);
+    if (summary.isNotEmpty) return _stripHtml(summary);
+    return '';
+  }
+
+  String get sourceDomain {
+    try {
+      final uri = Uri.parse(link);
+      if (uri.host.isNotEmpty) return uri.host.replaceFirst('www.', '');
+    } catch (_) {}
+    return '';
   }
 }

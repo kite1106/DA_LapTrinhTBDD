@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../services/database_service.dart';
+import '../services/animal_service.dart';
 
 class AnimalModel {
   final String id;
@@ -23,7 +23,7 @@ class AnimalModel {
 }
 
 class AnimalController {
-  final DatabaseService _databaseService = DatabaseService();
+  final AnimalService _animalService = AnimalService();
 
   List<AnimalModel> _animals = [];
   bool _isLoading = false;
@@ -33,12 +33,16 @@ class AnimalController {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  Stream<QuerySnapshot> getAnimalsStream() {
+    return _animalService.getAnimals();
+  }
+
   Future<void> loadAnimals() async {
     _isLoading = true;
     _error = null;
 
     try {
-      final stream = _databaseService.getAnimals();
+      final stream = _animalService.getAnimals();
       final snapshot = await stream.first;
       _animals = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
@@ -69,7 +73,7 @@ class AnimalController {
     required double longitude,
   }) async {
     try {
-      await _databaseService.addAnimal(
+      await _animalService.addAnimal(
         name: name,
         species: species,
         description: description,

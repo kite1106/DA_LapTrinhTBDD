@@ -102,7 +102,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chỉnh sửa động vật'),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFF00A86B),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -177,7 +177,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
                   label: Text(_submitting ? 'Đang lưu...' : 'Lưu thay đổi'),
                   onPressed: _submitting ? null : _save,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFF00A86B),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),

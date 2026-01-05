@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../controllers/auth_controller.dart';
 import '../models/news_model.dart';
-import '../services/wildlife_api_service.dart';
 import 'add_animal_screen.dart';
 import 'animal_detail_screen.dart';
 import 'animal_list_screen.dart';
